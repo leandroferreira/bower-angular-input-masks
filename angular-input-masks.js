@@ -1,7 +1,7 @@
 /**
  * angular-input-masks
  * Personalized input masks for AngularJS
- * @version v1.4.2
+ * @version v1.4.3
  * @link http://github.com/assisrafael/angular-input-masks
  * @license MIT
  */
@@ -195,12 +195,24 @@ if (objectTypes[typeof module]) {
 /**
  * br-validations
  * A library of validations applicable to several Brazilian data like I.E., CNPJ, CPF and others
- * @version v0.2.2
+ * @version v0.2.4
  * @link http://github.com/the-darc/br-validations
  * @license MIT
  */
-(function () {
-  var root = this;
+(function (root, factory) {
+	if (typeof define === 'function' && define.amd) {
+		// AMD. Register as an anonymous module.
+		define([], factory);
+	} else if (typeof exports === 'object') {
+		// Node. Does not work with strict CommonJS, but
+		// only CommonJS-like environments that support module.exports,
+		// like Node.
+		module.exports = factory();
+	} else {
+		// Browser globals (root is window)
+		root.BrV = factory();
+	}
+}(this, function () {
 var CNPJ = {};
 
 CNPJ.validate = function(c) {
@@ -817,22 +829,12 @@ IErules.AP = [{
 	validate: function(value) { return validateIE(value, this); }
 }];
 
-var BrV = {
-   ie: IE,
-   cpf: CPF,
-   cnpj: CNPJ
-};
-var objectTypes = {
-	'function': true,
-	'object': true
-};
-if (objectTypes[typeof module]) {
-	module.exports = BrV;
-} else {
-	root.BrV = BrV;
-}
-}.call(this));
-
+	return {
+		ie: IE,
+		cpf: CPF,
+		cnpj: CNPJ
+	};
+}));
 'use strict';
 
 angular.module('ui.utils.masks.br', [
@@ -1669,7 +1671,8 @@ angular.module('ui.utils.masks.global.number', [
 			link: function (scope, element, attrs, ctrl) {
 				var decimalDelimiter = $locale.NUMBER_FORMATS.DECIMAL_SEP,
 					thousandsDelimiter = $locale.NUMBER_FORMATS.GROUP_SEP,
-					decimals = $parse(attrs.uiNumberMask)(scope);
+					// decimals = $parse(attrs.uiNumberMask)(scope);
+					decimals = parseInt(attrs.uiNumberMask);
 
 				if (angular.isDefined(attrs.uiHideGroupSep)){
 					thousandsDelimiter = '';
@@ -1688,6 +1691,9 @@ angular.module('ui.utils.masks.global.number', [
 					}
 
 					var valueToFormat = PreFormatters.clearDelimitersAndLeadingZeros(value) || '0';
+					if(value.length > 1 && angular.isDefined(attrs.uiSufix) && value.indexOf(attrs.uiSufix) === -1) {
+						valueToFormat = valueToFormat.slice(0, valueToFormat.length - 1);
+					}
 					var formatedValue = viewMask.apply(valueToFormat);
 					var actualNumber = parseFloat(modelMask.apply(valueToFormat));
 
@@ -1701,6 +1707,10 @@ angular.module('ui.utils.masks.global.number', [
 							actualNumber *= -1;
 							formatedValue = '-' + formatedValue;
 						}
+					}
+
+					if(angular.isDefined(attrs.uiSufix)){
+						formatedValue = formatedValue + ' ' + attrs.uiSufix;
 					}
 
 					if (ctrl.$viewValue !== formatedValue) {
@@ -1721,8 +1731,13 @@ angular.module('ui.utils.masks.global.number', [
 						prefix = '-';
 					}
 
+					var sufix = '';
+					if(angular.isDefined(attrs.uiSufix)){
+						sufix = attrs.uiSufix;
+					}
+
 					var valueToFormat = PreFormatters.prepareNumberToFormatter(value, decimals);
-					return prefix + viewMask.apply(valueToFormat);
+					return prefix + viewMask.apply(valueToFormat) + ' ' + sufix;
 				}
 
 				ctrl.$formatters.push(formatter);
